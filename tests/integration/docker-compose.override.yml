@@ -1,0 +1,9 @@
+volumes:
+  traces-data:
+    external: true
+    name: bw-sequencer-traces
+
+services:
+  throttler:
+    volumes:
+      - traces-data:/traces:ro

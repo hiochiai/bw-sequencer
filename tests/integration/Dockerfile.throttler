@@ -1,0 +1,36 @@
+# ── Stage 1: build bw-sequencer (fully static musl binary) ───────────────────
+FROM rust:slim AS builder
+
+WORKDIR /src
+COPY src/ src/
+COPY Cargo.toml Cargo.toml
+COPY Cargo.lock Cargo.lock
+
+# musl-tools provides musl-gcc for native-arch static builds.
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends musl-tools && \
+    rm -rf /var/lib/apt/lists/*
+
+# Detect native arch (aarch64 or x86_64), add the matching musl target,
+# build a fully static binary, and copy it to a fixed path for the COPY below.
+RUN ARCH=$(uname -m) && \
+    rustup target add ${ARCH}-unknown-linux-musl && \
+    RUSTFLAGS='-C linker=musl-gcc' \
+    cargo build --release --target ${ARCH}-unknown-linux-musl && \
+    cp target/${ARCH}-unknown-linux-musl/release/bw-sequencer /bw-sequencer
+
+# ── Stage 2: runtime image ────────────────────────────────────────────────────
+# bw-sequencer is a fully static musl binary – no glibc dependency.
+# iproute2 (tc) is dynamically linked, so we still need a glibc-based image;
+# bookworm-slim (glibc 2.36) is sufficient.
+FROM debian:bookworm-slim
+
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends iproute2 iputils-ping && \
+    rm -rf /var/lib/apt/lists/*
+
+COPY --from=builder /bw-sequencer /usr/local/bin/bw-sequencer
+COPY tests/integration/entrypoint-throttler.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+ENTRYPOINT ["/entrypoint.sh"]

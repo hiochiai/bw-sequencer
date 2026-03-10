@@ -1,0 +1,81 @@
+name: bw-sequencer-integration
+
+networks:
+  client-net:
+    driver: bridge
+    ipam:
+      config:
+        # gateway must differ from the throttler's static IP (10.0.1.1) to
+        # avoid Docker assigning the same address to the bridge interface.
+        - subnet: 10.0.1.0/24
+          gateway: 10.0.1.254
+  server-net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 10.0.2.0/24
+          gateway: 10.0.2.254
+
+services:
+
+  # ── Middlebox: routes between client-net and server-net, applies TC shaping ──
+  throttler:
+    build:
+      # Context is the repo root so the Dockerfile can reach both
+      # bw-sequencer/ and tests/integration/.
+      context: ../..
+      dockerfile: tests/integration/Dockerfile.throttler
+    networks:
+      client-net:
+        ipv4_address: 10.0.1.1
+      server-net:
+        ipv4_address: 10.0.2.1
+    cap_add:
+      - NET_ADMIN
+    sysctls:
+      - net.ipv4.ip_forward=1
+    volumes:
+      - ./traces:/traces:ro
+    healthcheck:
+          # Ready once bw-sequencer has installed the HTB qdisc
+          test: ["CMD", "sh", "-c", "tc qdisc show 2>/dev/null | grep -q htb"]
+          interval: 2s
+          timeout: 3s
+          retries: 20
+          start_period: 5s
+
+  # ── iperf3 server ─────────────────────────────────────────────────────────────
+  # Uses the same image as test-runner (Dockerfile.test-runner) because it needs
+  # iproute2 to add the return route for client-net via the throttler.
+  iperf-server:
+    build:
+      context: ../..
+      dockerfile: tests/integration/Dockerfile.test-runner
+    cap_add:
+      - NET_ADMIN
+    # Add return route for client-net so server replies traverse the throttler.
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - "ip route add 10.0.1.0/24 via 10.0.2.1 2>/dev/null || true; exec iperf3 --server"
+    networks:
+      server-net:
+        ipv4_address: 10.0.2.10
+
+  # ── Test runner: measures bandwidth and verifies results ─────────────────────
+  test-runner:
+    build:
+      context: ../..
+      dockerfile: tests/integration/Dockerfile.test-runner
+    networks:
+      client-net:
+        ipv4_address: 10.0.1.10
+    cap_add:
+      - NET_ADMIN
+    environment:
+      WARMUP_SECS: "12"
+      IPERF_DURATION: "70"
+    depends_on:
+      throttler:
+        condition: service_healthy
+      iperf-server:
+        condition: service_started

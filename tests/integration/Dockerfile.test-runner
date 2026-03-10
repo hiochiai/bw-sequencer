@@ -1,0 +1,15 @@
+FROM debian:bookworm-slim
+
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        iperf3 \
+        python3 \
+        iproute2 \
+        iputils-ping && \
+    rm -rf /var/lib/apt/lists/*
+
+COPY tests/integration/entrypoint-test-runner.sh /entrypoint.sh
+COPY tests/integration/verify.py /verify.py
+RUN chmod +x /entrypoint.sh
+
+ENTRYPOINT ["/entrypoint.sh"]

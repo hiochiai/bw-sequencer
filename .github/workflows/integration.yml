@@ -1,0 +1,39 @@
+name: Integration Tests
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'Cargo.toml'
+      - 'Cargo.lock'
+      - 'tests/integration/**'
+  pull_request:
+    paths:
+      - 'src/**'
+      - 'Cargo.toml'
+      - 'Cargo.lock'
+      - 'tests/integration/**'
+
+jobs:
+  integration:
+    name: Bandwidth emulation integration test
+    runs-on: ubuntu-latest   # Linux runner with full NET_ADMIN support
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run integration tests
+        working-directory: tests/integration
+        # Grant NET_ADMIN so Docker containers can manipulate TC rules.
+        # GitHub Actions Linux runners have this capability available.
+        run: ./run_tests.sh
+
+      - name: Upload iperf results on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: iperf-results
+          path: |
+            /tmp/iperf_results.json
+          if-no-files-found: ignore

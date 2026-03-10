@@ -1,0 +1,23 @@
+# Bandwidth trace for integration tests.
+#
+# The throttler container starts bw-sequencer at t=0.  The test-runner starts
+# iperf approximately 12 s after it detects the throttler is healthy (TC ready).
+# The healthcheck passes roughly 5-10 s after bw-sequencer starts.
+# Therefore iperf begins at approximately bw-sequencer t = 17-22 s.
+#
+# Timeline designed so each phase is long enough that the test runner's
+# iperf measurement window falls cleanly inside it regardless of the ±10 s
+# start-time uncertainty:
+#
+#   t=0-30s   : 100 Mbps  — warmup (covers the worst-case 22 s startup delay)
+#   t=30-55s  : 5 Mbps    — low-bandwidth phase  (25 s; iperf sees ≥15 s of it)
+#   t=55-90s  : 100 Mbps  — high-bandwidth phase (35 s; iperf sees ≥30 s of it)
+#   t=90s     : bw-sequencer tears down TC and exits
+#
+# verify.py detects the phases by sliding window rather than absolute offsets,
+# so it is robust to start-time variation.
+time_sec,bandwidth_kbps
+0.0,100000
+30.0,5000
+55.0,100000
+110.0,100000
