@@ -15,6 +15,9 @@ on:
       - 'Cargo.lock'
       - 'rust-toolchain.toml'
 
+permissions:
+  contents: read
+
 jobs:
   check:
     name: Check & Test
