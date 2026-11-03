@@ -187,7 +187,7 @@ This setup requires the Raspberry Pi to have two network interfaces: one for the
 4.  **Install bw-sequencer**: Download the pre-compiled binary for ARM64.
 
     ```bash
-    wget https://github.com/your-org/bw-sequencer/releases/latest/download/bw-sequencer-linux-aarch64 
+    wget https://github.com/hiochiai/bw-sequencer/releases/latest/download/bw-sequencer-linux-aarch64 \
          -O bw-sequencer && chmod +x bw-sequencer
     ```
 

@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 description = "A bandwidth sequencer to emulate dynamic network conditions for mobile IoT and vehicle-mounted devices."
 license = "MIT"
-repository = "https://github.com/your-org/bw-sequencer"
+repository = "https://github.com/hiochiai/bw-sequencer"
 keywords = ["network", "emulator", "bandwidth", "tc", "iot", "sequencer"]
 categories = ["command-line-utilities", "network-programming"]
 
