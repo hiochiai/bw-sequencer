@@ -32,21 +32,36 @@ applying the specified egress bandwidth at each timestamp via the kernel's
 
 ## Quick start
 
-```bash
-# x86_64 Linux
-wget https://github.com/your-org/bw-sequencer/releases/latest/download/bw-sequencer-linux-x86_64 
-     -O bw-sequencer && chmod +x bw-sequencer
+### 1. Download binary
 
-sudo ./bw-sequencer --interface eth0 --csv examples/sample_trace.csv
+x86_64 Linux:
+
+```bash
+wget https://github.com/hiochiai/bw-sequencer/releases/latest/download/bw-sequencer-linux-x86_64 -O bw-sequencer && chmod +x bw-sequencer
 ```
 
 ARM64 (Raspberry Pi):
 
 ```bash
-wget https://github.com/your-org/bw-sequencer/releases/latest/download/bw-sequencer-linux-aarch64 
-     -O bw-sequencer && chmod +x bw-sequencer
+wget https://github.com/hiochiai/bw-sequencer/releases/latest/download/bw-sequencer-linux-aarch64 -O bw-sequencer && chmod +x bw-sequencer
+```
 
-sudo ./bw-sequencer -i eth0 -c my_trace.csv
+### 2. Create a trace CSV
+
+```bash
+cat << 'EOF' > trace.csv
+time_sec,bandwidth_kbps
+0.0,10000
+1.0,5000
+2.0,1000
+3.0,10000
+EOF
+```
+
+### 3. Run
+
+```bash
+sudo ./bw-sequencer --interface eth0 --csv trace.csv
 ```
 
 ---
